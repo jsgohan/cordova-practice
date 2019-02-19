@@ -74,11 +74,16 @@
 
 - src/android/android/nativeapiprovider.js JS->Native 的具体交互形式
 - src/android/android/promptbasednativeapi.js 通过 prompt()和 Native 交互（Android2.3 simulator 的 Bug）
-- src/android/exec.js 执行 JS->Native 交互
+- src/android/exec.js 执行 JS<->Native 交互
 - src/android/platform.js bootstrap 处理
 - src/android/plugin/android/app.js 清缓存、loadUrl、退出程序等
 
 ### cordova-ios
+
+- src/ios/exec.js 执行JS<->Native交互
+- src/ios/platform.js bootstrap处理
+- src/ios/ios/console.js 实现console polyfill
+- src/ios/ios/logger.js 实现console polyfill
 
 ## 源码部分
 
