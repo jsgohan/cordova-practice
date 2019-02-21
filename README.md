@@ -90,3 +90,40 @@
 dist - 存放带有中文注释的合并后的代码
 
 sourcecode - 存放中文注释后的源码
+
+## Cordova mutate
+
+为什么会有mutate方案？
+
+原因：在接入cordova之前，我们已经实现了属于我们自己的jssdk和原生能力壳，但是因为cordova已经是一个很成型的混合开发方案，我们希望可以借鉴他们的实现方式来扩展我们的实现。并且我们原来的实现方式是结合jenkins将整个打包的过程都用jenkins脚本实现自动化打包，这样对于我们开发人员来说就不需要在自己的本机同时安装ios和andriod两套环境，并且也节省了部门的开支，毕竟要开发ios要给开发人员配置一台mac！
+
+经过两天的阅读源码，我们初定采用的方案，最大程度的使用cordova的插件能力，同时兼容我们自己的原生能力，结合Jenkins实现自己的打包机制。
+
+原生层
+
+1. 继承cordova的webview
+
+   - android端替换cordova的原生webview为X5Webview
+
+   - ios端替换cordova的原生webview为WKWebview
+
+     替换的原因就是我们自己的原生壳使用的就是这两个webview
+
+2. 插件方面：将插件带的plugin.xml中的platform中的配置信息及文件引入我们原生壳的指定目录下
+
+⚠️ios端有个坑，项目的project.pbxproj中的信息存放的项目中各项配置的信息，且包括引入了哪些源码，对于开发人员来说，其实是不用关注这点的，这么做的目的是什么不太清楚，没有具体详问。。。这个文件里的信息是怎么生成的xcode其实已经帮忙处理好了，cordova也自然的把这些事情也做好了。我们现在要用我们自己的打包方式，就必须也把这个给嚼了，因为对于整个流程来说，这点是最大的问题。。
+
+Web端
+
+1. 引入cordova.js及cordova-plugins相关文件到我们自己的Vue模板中，在cordova-js中增加我们自己的jssdk引用，重新打包cordova.js文件
+2. 重写cordova-plugin打包流程，放到我们自己的devtools工具中，生成我们自己的config.json，目的是jenkins脚本会根据配置文件实现打包
+
+Jenkins构建环境端
+
+1. 需要根据上传的源文件中的config.json的规则，配置好原生壳里的文件，生成待打包的源码信息
+2. 实现打包生成app
+
+### TODO
+
+1. 先解决前面说的ios的问题，于是需要去分析cordova-cli、cordova-lib中关于platform、plugin部分的源码
+2. 实现cordova的plugin功能，生成自己的config.json
