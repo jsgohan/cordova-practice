@@ -126,4 +126,57 @@ Jenkins构建环境端
 ### TODO
 
 1. 先解决前面说的ios的问题，于是需要去分析cordova-cli、cordova-lib中关于platform、plugin部分的源码
+
+   目前该问题的解决方案初定为改为用pod的方式引入ios相关的lib包，但这个方案带来的问题是，每次需要使用一个包的时候，需要先将该包的ios部分抽离出来提交到私服，然后config.json中需要写好配置信息提供到自动化构建中
+
 2. 实现cordova的plugin功能，生成自己的config.json
+
+   cordova plugin add xxx
+
+   拉取代码到plugins，同时修改config.xml配置
+
+   问题1：在非cordova工程执行插件命令抛以下异常？
+
+   ```
+   cordova plugin add cordova-plugin-ble-central
+   
+   (node:26948) UnhandledPromiseRejectionWarning: CordovaError: Current working directory is not a Cordova-based project.
+       at Object.cdProjectRoot (/usr/local/lib/node_modules/cordova/node_modules/cordova-lib/src/cordova/util.js:170:15)
+       at /usr/local/lib/node_modules/cordova/node_modules/cordova-lib/src/cordova/plugin/index.js:36:40
+       at _fulfilled (/usr/local/lib/node_modules/cordova/node_modules/cordova-lib/node_modules/q/q.js:787:54)
+       at self.promiseDispatch.done (/usr/local/lib/node_modules/cordova/node_modules/cordova-lib/node_modules/q/q.js:816:30)
+       at Promise.promise.promiseDispatch (/usr/local/lib/node_modules/cordova/node_modules/cordova-lib/node_modules/q/q.js:749:13)
+       at /usr/local/lib/node_modules/cordova/node_modules/cordova-lib/node_modules/q/q.js:810:14
+       at flush (/usr/local/lib/node_modules/cordova/node_modules/cordova-lib/node_modules/q/q.js:108:17)
+       at process._tickCallback (internal/process/next_tick.js:176:11)
+       at Function.Module.runMain (internal/modules/cjs/loader.js:697:11)
+       at startup (internal/bootstrap/node.js:201:19)
+   (node:26948) UnhandledPromiseRejectionWarning: Unhandledpromise rejection. This error originated either by throwing inside of an async function without a catch block, orby rejecting a promise which was not handled with .catch(). (rejection id: 1)
+   (node:26948) [DEP0018] DeprecationWarning: Unhandled promise rejections are deprecated. In the future, promise rejections that are not handled will terminate the Node.js process with a non-zero exit code.
+   ```
+
+   解决方案：
+
+   ```js
+   function isRootDir (dir) {
+       if (fs.existsSync(path.join(dir, 'www'))) {
+           if (fs.existsSync(path.join(dir, 'config.xml'))) {
+               // For sure is.
+               if (fs.existsSync(path.join(dir, 'platforms'))) {
+                   return 2;
+               } else {
+                   return 1;
+               }
+           }
+           // Might be (or may be under platforms/).
+           if (fs.existsSync(path.join(dir, 'www', 'config.xml'))) {
+               return 1;
+           }
+       }
+       return 0;
+   }
+   ```
+
+   可见，cordova要求根目录下必须要有www文件夹，vue项目根目录没有，因此需要手动创建该目录，可以将之后打包生成的dist目录改为www目录即可。
+
+3. cordova私库管理
